@@ -1,4 +1,4 @@
-CC        = /usr/bin/gcc-11
+CC        = /usr/local/bin/gcc-11
 CFLAGS   += -lm -lgsl -lgslcblas -O4 -fcommon -I${CONDA_PREFIX}/include -L${CONDA_PREFIX}/lib 
 
 all: est_dfe est_alpha_omega prop_muts_in_s_ranges
