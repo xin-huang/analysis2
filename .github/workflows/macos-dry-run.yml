@@ -31,14 +31,14 @@ jobs:
         cd dfe-alpha-release-2.16
         micromamba run -n analysis2 make
         cd ../../
-    - name: Install msmc
-      run: |
-        cd ext
-        git clone https://github.com/stschiff/msmc.git
-        cat msmc_makefile_stdpopsim_patch > msmc/Makefile 
-        cd msmc 
-        micromamba run -n analysis2 make
-        cd ../../
+        #- name: Install msmc
+        #run: |
+        #cd ext
+        #git clone https://github.com/stschiff/msmc.git
+        #cat msmc_makefile_stdpopsim_patch > msmc/Makefile 
+        #cd msmc 
+        #micromamba run -n analysis2 make
+        #cd ../../
     - name: Install smc++
       run: |
         cd ext
