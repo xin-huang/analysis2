@@ -14,7 +14,7 @@ jobs:
         python-version: "3.10"
     - name: Install gcc
       run: |
-        which gcc-11
+        export CC=/usr/local/bin/gcc-11
     - name: Add micromamba to system path
       uses: mamba-org/provision-with-micromamba@main
       with:
