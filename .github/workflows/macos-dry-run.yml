@@ -1,4 +1,4 @@
-name: dry-run
+name: macos-dry-run
 
 on: ['push', 'pull_request']
 
@@ -24,7 +24,7 @@ jobs:
         wget -c https://sourceforge.net/projects/dfe-alpha-k-e-w/files/dfe-alpha-release-2.16.tar.gz/download
         mv download dfe-alpha-release-2.16.tar.gz
         tar -xvf dfe-alpha-release-2.16.tar.gz
-        cat dfe_alpha_makefile_stdpopsim_patch > dfe-alpha-release-2.16/Makefile
+        cat dfe_alpha_macos_makefile_stdpopsim_patch > dfe-alpha-release-2.16/Makefile
         cd dfe-alpha-release-2.16
         micromamba run -n analysis2 make
         cd ../../

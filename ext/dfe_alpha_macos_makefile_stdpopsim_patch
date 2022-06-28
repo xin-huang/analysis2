@@ -1,0 +1,16 @@
+CC        = ${CONDA_PREFIX}/bin/clang
+CFLAGS   += -lm -lgsl -lgslcblas -O4 -fcommon -I${CONDA_PREFIX}/include -L${CONDA_PREFIX}/lib 
+
+all: est_dfe est_alpha_omega prop_muts_in_s_ranges
+       
+est_dfe : est_dfe.c routine_library.o bctmat01.c genlib.o nrlib.o nrutil.o tmatrix_routines.o
+	$(CC) -o $@ $^ $(CFLAGS)
+
+est_alpha_omega : est_alpha_omega.c routine_library.o bctmat01.o tmatrix_routines.o genlib.o seqlib.o nrlib.o nrutil.o 
+	$(CC) -o $@  $^ $(CFLAGS)
+       
+prop_muts_in_s_ranges : prop_muts_in_s_ranges.c routine_library.o genlib.o
+	$(CC) -o $@ $^ $(CFLAGS)
+
+clean:
+	@rm -f est_dfe est_alpha_omega prop_muts_in_s_ranges *.o 
