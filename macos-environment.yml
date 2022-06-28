@@ -3,9 +3,7 @@ channels:
   - conda-forge
   - bioconda
 dependencies:
-  - clang_osx-64
   - gmp
-  - clangxx_osx-64
   - mpfr
   - pip
   - slim==3.7.1
@@ -21,7 +19,6 @@ dependencies:
   - cython
   - tqdm
   - h5py
-  - gfortran_osx-64
   - blas
   - gsl
   - dadi
