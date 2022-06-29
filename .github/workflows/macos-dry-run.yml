@@ -38,10 +38,9 @@ jobs:
         #cd ../../
     - name: Install smc++
       run: |
-        echo "CC=/usr/local/bin/gcc-11" >> $GITHUB_ENV
         cd ext
         git clone https://github.com/popgenmethods/smcpp
-        cat smc_setup_stdpopsim_patch > smcpp/setup.py
+        cat smc_setup_macos_stdpopsim_patch > smcpp/setup.py
         cat smc_pyproject_stdpopsim_patch > smcpp/pyproject.toml
         cd smcpp
         micromamba run -n analysis2 pip install .
