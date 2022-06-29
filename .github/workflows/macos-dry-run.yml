@@ -42,7 +42,7 @@ jobs:
         git clone https://github.com/popgenmethods/smcpp
         cat smc_setup_macos_stdpopsim_patch > smcpp/setup.py
         cat smc_pyproject_stdpopsim_patch > smcpp/pyproject.toml
-        cat conditioned_sfs.cpp > smcpp/src/conditioned_sfs.cpp
+        #cat conditioned_sfs.cpp > smcpp/src/conditioned_sfs.cpp
         cd smcpp
         #micromamba run -n analysis2 pip install .
         micromamba run -n analysis2 python setup.py install

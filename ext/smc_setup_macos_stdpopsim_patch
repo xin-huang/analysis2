@@ -63,7 +63,7 @@ extensions = [
         "smcpp._smcpp",
         sources=["smcpp/_smcpp.cpp"] + cpps,
         language="c++",
-        include_dirs=[np.get_include(), "include", "include/eigen3"],
+        include_dirs=[np.get_include(), "include", "include/eigen3", "/usr/inlcude"],
         libraries=libraries,
         extra_compile_args=extra_compile_args,
         extra_link_args=extra_link_args,
