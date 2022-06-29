@@ -17,9 +17,9 @@ class custom_build_ext(build_ext):
         # removes the "default" compiler flags that would
         # otherwise get passed on to to the compiler, i.e.,
         # distutils.sysconfig.get_var("CFLAGS").
-        self.compiler.set_executable("compiler_so", "/usr/local/bin/g++-8")
-        self.compiler.set_executable("compiler_cxx", "/usr/local/bin/g++-8")
-        self.compiler.set_executable("linker_so", "/usr/local/bin/g++-8")
+        self.compiler.set_executable("compiler_so", "/usr/local/bin/g++-11")
+        self.compiler.set_executable("compiler_cxx", "/usr/local/bin/g++-11")
+        self.compiler.set_executable("linker_so", "/usr/local/bin/g++-11")
         build_ext.build_extensions(self)
 
 if True:
