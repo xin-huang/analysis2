@@ -36,6 +36,10 @@ jobs:
         #cd msmc 
         #micromamba run -n analysis2 make
         #cd ../../
+    - name: Test
+      run: |
+        echo ${CC}
+        echo ${CONDA_PREFIX}
     - name: Install smc++
       run: |
         cd ext
@@ -44,7 +48,7 @@ jobs:
         cat smc_pyproject_stdpopsim_patch > smcpp/pyproject.toml
         cd smcpp
         #micromamba run -n analysis2 pip install .
-        micromamba run -n analysis2 python setup.py install --fcompiler=${CONDA_PREFIX}/bin/gfortran
+        micromamba run -n analysis2 python setup.py install
         cd ../../
     - name: Test dry-run
       run: |
