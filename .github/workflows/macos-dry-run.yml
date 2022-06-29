@@ -18,16 +18,16 @@ jobs:
         environment-name: analysis2
         activate-environment: analysis2
         environment-file: macos-environment.yml
-    - name: Install DFE-alpha
-      run: |
-        cd ext
-        wget -c https://sourceforge.net/projects/dfe-alpha-k-e-w/files/dfe-alpha-release-2.16.tar.gz/download
-        mv download dfe-alpha-release-2.16.tar.gz
-        tar -xvf dfe-alpha-release-2.16.tar.gz
-        cat dfe_alpha_macos_makefile_stdpopsim_patch > dfe-alpha-release-2.16/Makefile
-        cd dfe-alpha-release-2.16
-        micromamba run -n analysis2 make
-        cd ../../
+        #- name: Install DFE-alpha
+        #run: |
+        #cd ext
+        #wget -c https://sourceforge.net/projects/dfe-alpha-k-e-w/files/dfe-alpha-release-2.16.tar.gz/download
+        #mv download dfe-alpha-release-2.16.tar.gz
+        #tar -xvf dfe-alpha-release-2.16.tar.gz
+        #cat dfe_alpha_macos_makefile_stdpopsim_patch > dfe-alpha-release-2.16/Makefile
+        #cd dfe-alpha-release-2.16
+        #micromamba run -n analysis2 make
+        #cd ../../
         #- name: Install msmc
         #run: |
         #cd ext
@@ -38,6 +38,7 @@ jobs:
         #cd ../../
     - name: Install smc++
       run: |
+        echo "CC=/usr/local/bin/gcc-11" >> $GITHUB_ENV
         cd ext
         git clone https://github.com/popgenmethods/smcpp
         cat smc_setup_stdpopsim_patch > smcpp/setup.py

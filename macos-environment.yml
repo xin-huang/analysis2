@@ -2,8 +2,6 @@ name: analysis2
 channels:
   - conda-forge
   - bioconda
-variables:
-  CC: /usr/local/bin/gcc-11
 dependencies:
   - gmp
   - mpfr
