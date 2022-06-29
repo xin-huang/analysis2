@@ -1,4 +1,5 @@
 #include "conditioned_sfs.h"
+#include <assert.h>
 
 template <typename T>
 OnePopConditionedSFS<T>::OnePopConditionedSFS(int n) : 
@@ -104,8 +105,8 @@ std::vector<Matrix<T> > incorporate_theta(const std::vector<Matrix<T> > &csfs, d
     std::vector<Matrix<T> > ret(csfs.size());
     for (unsigned int i = 0; i < csfs.size(); ++i)
     {
-//assert(csfs[i](0, 0) == 0.);
-//assert(csfs[i](2, n) == 0.);
+        assert(csfs[i](0, 0) == 0.);
+        assert(csfs[i](2, n) == 0.);
         T tauh = csfs[i].sum();
         // if (toDouble(tauh) > 1.0 / theta)
         // {
