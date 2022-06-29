@@ -25,7 +25,7 @@ class custom_build_ext(build_ext):
 if True:
     extra_compile_args = [
         "-O2",
-        "-std=g++11",
+        "-std=c++11",
         "-Wno-deprecated-declarations",
         "-Wno-int-in-bool-context",
         "-DNO_CHECK_NAN",
