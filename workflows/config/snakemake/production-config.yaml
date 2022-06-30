@@ -12,8 +12,8 @@
     "num_samples_per_population": [100,100,100],
     }
 ]
-"genetic_map": "HapMapII_GRCh37"
-"chrm_list": "chr21"
+"genetic_map": ["Uniform_GeneticMap", "HapMapII_GRCh37"]
+"chrm_list": ["chr1", "chr21"]
 "dfe_list": ["Gamma_H17"]
 "annotation_list": ["all_sites", "ensembl_havana_104_exons"]
 "output_dir": "results"
@@ -30,7 +30,7 @@
 
 # exe paths
 "poly_dfe_exec": "ext/polyDFE/polyDFE-2.0-linux-64-bit"
-"dfe_alpha_data_path_1": "ext/DFE-alpha/data"
+"dfe_alpha_data_path_1": "ext/dfe-alpha-release-2.16/data"
 "dfe_alpha_data_path_2": "three-epoch"
 "msmc_exec" : "ext/msmc/build/msmc"
 "stairwayplot_code" : "stairwayplot/swarmops.jar"

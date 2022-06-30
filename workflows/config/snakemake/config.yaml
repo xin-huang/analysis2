@@ -12,8 +12,8 @@
     "num_samples_per_population": [10,10,10],
     }
 ]
-"genetic_map": "HapMapII_GRCh37"
-"chrm_list": "chr21"
+"genetic_map": ["HapMapII_GRCh37"]
+"chrm_list": ["chr21"]
 "dfe_list": ["Gamma_H17"]
 "output_dir": "results"
 

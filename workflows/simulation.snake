@@ -10,6 +10,7 @@ configfile: "workflows/config/snakemake/config.yaml"
 
 np.random.seed(config["seed"])
 
+
 # ###############################################################################
 # GENERAL RULES & GLOBALS
 # ###############################################################################
@@ -34,7 +35,7 @@ chrm_list = [chrom.id for chrom in species.genome.chromosomes]
 if "chrY" in chrm_list:
     chrm_list.remove("chrY")
 if(config["chrm_list"] != "all"):
-    chrm_list = [chr for chr in config["chrm_list"].split(",")]
+    chrm_list = [chr for chr in config["chrm_list"]]
 
 seed_array = np.random.random_integers(1,2**31,replicates)
 
@@ -48,26 +49,32 @@ demo_model_ids = [x["id"] for x in demo_model_array]
 dfe_list = config["dfe_list"]
 annotation_list = config["annotation_list"]
 
+genmap_list = config['genetic_maps']
+
+
 # ###############################################################################
 # GENERAL RULES & GLOBALS
 # ###############################################################################
 
+
 rule all:
     input:
-        expand(output_dir + "/simulated_data/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees", 
+        expand(output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees", 
             seeds=seed_array, 
             demog=demo_model_ids,
             dfes=dfe_list,
             annots=annotation_list,
-            chrms=chrm_list
+            chrms=chrm_list,
+            genmap=genmap_list,
             )
+
 
 rule simulation:
     input:
     output:
-        output_dir + "/simulated_data/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees"
+        output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees"
     threads: 1
-    resources: time_min=3000, mem_mb=10000, cpus=1
+    resources: time_min=12000, mem_mb=100000, cpus=1, nodes=1, ntasks=4,
     run:
         
         if wildcards.demog == 'Constant': 
@@ -79,8 +86,8 @@ rule simulation:
             mutation_rate = model.mutation_rate
             samples = model.get_samples(*demo_sample_size_dict[wildcards.demog])  # YRI, CEU, CHB
 
-        genetic_map_id = config["genetic_map"]
-        contig = species.get_contig(wildcards.chrms, genetic_map=genetic_map_id)
+        if wildcards.genmap == 'Uniform_GeneticMap': contig = species.get_contig(wildcards.chrms)
+        else: contig = species.get_contig(wildcards.chrms, genetic_map=wildcards.genmap)
         contig.clear_dfes()
         dfe = species.get_dfe(wildcards.dfes)
         if wildcards.annots == "all_sites":

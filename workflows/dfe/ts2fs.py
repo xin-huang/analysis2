@@ -61,13 +61,14 @@ def _generate_fs_from_ts(ts, sample_sets=None):
 
     return mut_afs
 
-def generate_fs(ts, sample_sets, output, format, is_folded=False, **kwargs):
+def generate_fs(ts, sample_sets, output, format, intervals=None, is_folded=False, **kwargs):
     """
     Description:
         Generates 1d site frequency spectra from tree sequences.
 
     Arguments:
         ts tskit.TreeSequence: A tree sequence.
+        intervals np.ndarray: Intervals used for generating frequency spectra.
         sample_sets numpy.ndarray: A sample list.
         output list: Names of output files.
         format str: Format of output files. 
@@ -78,6 +79,9 @@ def generate_fs(ts, sample_sets, output, format, is_folded=False, **kwargs):
     # in a list to make it a list of sample setS
     #if not isinstance(sample_sets, list):
     #    sample_sets = [sample_sets]
+    if intervals is not None:
+        ts = ts.keep_intervals(intervals)
+
     mut_afs = _generate_fs_from_ts(ts, sample_sets)
     neu_fs = mut_afs["neutral"]
     nonneu_fs = mut_afs["non_neutral"]
@@ -144,8 +148,10 @@ def _generate_polydfe_fs(neu_fs, nonneu_fs, output, **kwargs):
         neu_prop float: Proportion of neutral mutations.
         nonneu_prop float: Proportion of non-neutral mutations
     """
-    neu_len = round(kwargs['seq_len'] * kwargs['neu_prop'])
-    nonneu_len = round(kwargs['seq_len'] * kwargs['nonneu_prop'])
+    #neu_len = round(kwargs['seq_len'] * kwargs['neu_prop'])
+    #nonneu_len = round(kwargs['seq_len'] * kwargs['nonneu_prop'])
+    neu_len = round(kwargs['neu_len'])
+    nonneu_len = round(kwargs['nonneu_len'])
 
     with open(output[0], 'w') as o:
         o.write(f"1 1 {kwargs['sample_size']}\n")
