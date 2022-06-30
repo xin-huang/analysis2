@@ -62,16 +62,18 @@ rule all:
 
 rule generate_polydfe_fs:
     input:
-        output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees"
+        ts = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees",
     output:
-        output_dir + "/inference/dfe/polyDFE/{genmap}/{demog}/{dfes}/{annots}/{seeds}/{chrms}/pop{ids}/pop{ids}.polyDFE.fs"
-    threads: 1
+        fs = output_dir + "/inference/dfe/polyDFE/{genmap}/{demog}/{dfes}/{annots}/{seeds}/{chrms}/pop{ids}/pop{ids}.polyDFE.fs",
+    threads: 1,
     run:
         if wildcards.genmap == 'Uniform_GeneticMap': contig = species.get_contig(wildcards.chrms)
         else: contig = species.get_contig(wildcards.chrms, genetic_map=wildcards.genmap)
         total_len = contig.recombination_map.sequence_length
+        neu_prop = 0.3
+        nonneu_prop = 0.7
         
-        ts = tskit.load(input[0])
+        ts = tskit.load(input.ts)
         index = int(wildcards.ids)
         samps = ts.samples(population=index)
         if len(samps) == 0: samps = ts.samples(population=0)
@@ -81,41 +83,39 @@ rule generate_polydfe_fs:
             annot = species.get_annotations(wildcards.annots)
             annot_intervals = annot.get_chromosome_annotations(wildcards.chrms)
             exon_len = np.sum(annot_intervals[:,1]-annot_intervals[:,0])
-            neu_len = exon_len * 0.3
-            nonneu_len = exon_len * 0.7
-            ts2fs.generate_fs(ts, samps, output, format='polyDFE', intervals=annot_intervals, neu_len=neu_len, nonneu_len=nonneu_len, sample_size=len(samps))
+            ts2fs.generate_fs(ts, samps, output.fs, format='polyDFE', intervals=annot_intervals, 
+                              seq_len=exon_len, neu_prop=neu_prop, nonneu_prop=nonneu_prop, sample_size=len(samps))
         else: 
-            neu_len = total_len * 0.3
-            nonneu_len = total_len * 0.7
-            ts2fs.generate_fs(ts, samps, output, format='polyDFE', neu_len=neu_len, nonneu_len=nonneu_len, sample_size=len(samps))
+            ts2fs.generate_fs(ts, samps, output.fs, format='polyDFE', 
+                              seq_len=total_len, neu_prop=neu_prop, nonneu_prop=nonneu_prop, sample_size=len(samps))
          
 
 rule run_polydfe:
     input: 
-        rules.generate_polydfe_fs.output
+        fs = rules.generate_polydfe_fs.output,
     output: 
-        output_dir + "/inference/dfe/polyDFE/{genmap}/{demog}/{dfes}/{annots}/{seeds}/{chrms}/pop{ids}/pop{ids}.polyDFE.out"
+        res = output_dir + "/inference/dfe/polyDFE/{genmap}/{demog}/{dfes}/{annots}/{seeds}/{chrms}/pop{ids}/pop{ids}.polyDFE.out",
     params:
-        poly_dfe_exec = os.path.abspath(config["poly_dfe_exec"])
-    threads: 1
+        poly_dfe_exec = os.path.abspath(config["poly_dfe_exec"]),
+    threads: 1,
     shell:
         """
-        {params.poly_dfe_exec} -d {input} -m C -i workflows/config/polyDFE/polyDFE_init_models.txt 1 -e > {output[0]}
+        {params.poly_dfe_exec} -d {input.fs} -m C -i workflows/config/polyDFE/polyDFE_init_models.txt 1 -e > {output.res}
         """
 
 
 rule get_polydfe_bestfits:
     input:
-        rules.run_polydfe.output
+        polydfe_out = rules.run_polydfe.output,
     output:
-        output_dir + "/inference/dfe/polyDFE/{genmap}/{demog}/{dfes}/{annots}/{seeds}/{chrms}/pop{ids}/pop{ids}.polyDFE.bestfit"
-    threads: 1
+        bestfit = output_dir + "/inference/dfe/polyDFE/{genmap}/{demog}/{dfes}/{annots}/{seeds}/{chrms}/pop{ids}/pop{ids}.polyDFE.bestfit",
+    threads: 1,
     shell:
         """
         paste <(echo pop{wildcards.ids}) \
-              <(grep "Best joint likelihood" {input} | awk '{{print $6}}') \
+              <(grep "Best joint likelihood" {input.polydfe_out} | awk '{{print $6}}') \
               <(grep eps_an {input} -A 3 | tail -1 | awk 'BEGIN{{OFS="\\t"}}{{print $2,$3}}') \
-              <(grep eps_an {input} -A 1 | tail -1 | awk '{{print $3}}') | awk -v seeds={wildcards.seeds} -v genmap={wildcards.genmap} -v demog={wildcards.demog} -v dfe={wildcards.dfes} -v annot={wildcards.annots} -v chr={wildcards.chrms} -v id={wildcards.ids} 'BEGIN{{OFS="\\t"}}{{print seeds,genmap,demog,"polyDFE",dfe,annot,chr,$0}}' > {output}
+              <(grep eps_an {input} -A 1 | tail -1 | awk '{{print $3}}') | awk -v seeds={wildcards.seeds} -v genmap={wildcards.genmap} -v demog={wildcards.demog} -v dfe={wildcards.dfes} -v annot={wildcards.annots} -v chr={wildcards.chrms} -v id={wildcards.ids} 'BEGIN{{OFS="\\t"}}{{print seeds,genmap,demog,"polyDFE",dfe,annot,chr,$0}}' > {output.bestfit}
         """
 
 

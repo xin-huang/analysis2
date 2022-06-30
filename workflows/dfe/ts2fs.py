@@ -148,10 +148,8 @@ def _generate_polydfe_fs(neu_fs, nonneu_fs, output, **kwargs):
         neu_prop float: Proportion of neutral mutations.
         nonneu_prop float: Proportion of non-neutral mutations
     """
-    #neu_len = round(kwargs['seq_len'] * kwargs['neu_prop'])
-    #nonneu_len = round(kwargs['seq_len'] * kwargs['nonneu_prop'])
-    neu_len = round(kwargs['neu_len'])
-    nonneu_len = round(kwargs['nonneu_len'])
+    neu_len = round(kwargs['seq_len'] * kwargs['neu_prop'])
+    nonneu_len = round(kwargs['seq_len'] * kwargs['nonneu_prop'])
 
     with open(output[0], 'w') as o:
         o.write(f"1 1 {kwargs['sample_size']}\n")
