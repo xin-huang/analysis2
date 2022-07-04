@@ -151,7 +151,7 @@ def _generate_polydfe_fs(neu_fs, nonneu_fs, output, **kwargs):
     neu_len = round(kwargs['seq_len'] * kwargs['neu_prop'])
     nonneu_len = round(kwargs['seq_len'] * kwargs['nonneu_prop'])
 
-    with open(output[0], 'w') as o:
+    with open(output, 'w') as o:
         o.write(f"1 1 {kwargs['sample_size']}\n")
         o.write(" ".join([str(round(f)) for f in neu_fs[1:-1]]) + " " + str(neu_len) + "\n")
         o.write(" ".join([str(round(f)) for f in nonneu_fs[1:-1]]) + " " + str(nonneu_len) + "\n")
@@ -264,7 +264,7 @@ def _generate_grapes_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs):
     neu_len = round(kwargs['seq_len'] * kwargs['neu_prop'])
     nonneu_len = round(kwargs['seq_len'] * kwargs['nonneu_prop'])
 
-    with open(output[0], 'w') as o:
+    with open(output, 'w') as o:
         o.write(kwargs['header']+"\n")
         if is_folded is not True: o.write("#unfolded\n")
         o.write(kwargs['data_description']+"\t")

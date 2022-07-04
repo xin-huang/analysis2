@@ -115,7 +115,7 @@ rule get_polydfe_bestfits:
         paste <(echo pop{wildcards.ids}) \
               <(grep "Best joint likelihood" {input.polydfe_out} | awk '{{print $6}}') \
               <(grep eps_an {input} -A 3 | tail -1 | awk 'BEGIN{{OFS="\\t"}}{{print $2,$3}}') \
-              <(grep eps_an {input} -A 1 | tail -1 | awk '{{print $3}}') | awk -v seeds={wildcards.seeds} -v genmap={wildcards.genmap} -v demog={wildcards.demog} -v dfe={wildcards.dfes} -v annot={wildcards.annots} -v chr={wildcards.chrms} -v id={wildcards.ids} 'BEGIN{{OFS="\\t"}}{{print seeds,genmap,demog,"polyDFE",dfe,annot,chr,$0}}' > {output.bestfit}
+              <(grep eps_an {input} -A 1 | tail -1 | awk '{{print $3}}') | awk -v seeds={wildcards.seeds} -v genmap={wildcards.genmap} -v demog={wildcards.demog} -v dfe={wildcards.dfes} -v annot={wildcards.annots} -v chr={wildcards.chrms} -v id={wildcards.ids} 'BEGIN{{OFS="\\t"}}{{print seeds,genmap,demog,dfe,annot,chr,$0}}' > {output.bestfit}
         """
 
 
@@ -128,5 +128,5 @@ rule polydfe_summary:
     threads: 1
     shell:
         """
-        cat {input.bestfits} | sed '1iseed\\tgenetic_map\\tdemography\\ttool\\tDFE\\tannotation\\tchromosome\\tpopulation\\tlikelihood\\tS_d\\tb\\ttheta_bar' > {output.summary}
+        cat {input.bestfits} | sed '1iseed\\tgenetic_map\\tdemography\\tDFE\\tannotation\\tchromosome\\tpopulation\\tlikelihood\\tEs\\tshape\\ttheta_bar' > {output.summary}
         """
