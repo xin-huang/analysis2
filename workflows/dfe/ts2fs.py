@@ -2,6 +2,7 @@ import dadi
 import numpy as np
 import tskit
 
+
 def _generate_fs_from_ts(ts, sample_sets=None):
     """
     Description:
@@ -61,6 +62,7 @@ def _generate_fs_from_ts(ts, sample_sets=None):
 
     return mut_afs
 
+
 def generate_fs(ts, sample_sets, output, format, intervals=None, is_folded=False, **kwargs):
     """
     Description:
@@ -98,6 +100,7 @@ def generate_fs(ts, sample_sets, output, format, intervals=None, is_folded=False
     elif format == 'grapes': _generate_grapes_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs)
     else: raise Exception(f'{format} is not supported!')
 
+
 def _fold_fs(fs):
     """
     Description:
@@ -116,6 +119,7 @@ def _fold_fs(fs):
   
     return folded_fs
 
+
 def _generate_dadi_fs(neu_fs, nonneu_fs, output):
     """
     Description:
@@ -131,6 +135,7 @@ def _generate_dadi_fs(neu_fs, nonneu_fs, output):
 
     neu_fs.to_file(output[0])
     nonneu_fs.to_file(output[1])
+
 
 def _generate_polydfe_fs(neu_fs, nonneu_fs, output, **kwargs):
     """
@@ -155,6 +160,7 @@ def _generate_polydfe_fs(neu_fs, nonneu_fs, output, **kwargs):
         o.write(f"1 1 {kwargs['sample_size']}\n")
         o.write(" ".join([str(round(f)) for f in neu_fs[1:-1]]) + " " + str(neu_len) + "\n")
         o.write(" ".join([str(round(f)) for f in nonneu_fs[1:-1]]) + " " + str(nonneu_len) + "\n")
+
 
 def _generate_dfe_alpha_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs):
     """
@@ -241,6 +247,7 @@ def _generate_dfe_alpha_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs):
         o.write(str(len(neu_fs)-1)+"\n")
         o.write(" ".join([str(round(f)) for f in nonneu_fs]) + "\n")
         o.write(" ".join([str(round(f)) for f in neu_fs]) + "\n")
+
 
 def _generate_grapes_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs):
     """
