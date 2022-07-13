@@ -162,7 +162,7 @@ rule get_dadi_dfe_bestfits:
     resources: time_min=60, mem_mb=5000, cpus=1
     shell:
         """
-        grep 'Converged results' {input} -A 2 | tail -1 | awk -v id={wildcards.ids} '{{print "pop"id"\\t"$0}}' | sed '1ipop_id\\tlikelihood\\tshape\\tscale\\ttheta' > {output}
+        grep 'Converged results' {input.bestfit} -A 2 | tail -1 | awk -v seeds={wildcards.seeds} -v genmap={wildcards.genmap} -v demog={wildcards.demog} -v dfe={wildcards.dfes} -v annot={wildcards.annots} -v chr={wildcards.chrms} -v id={wildcards.ids} 'BEGIN{{OFS="\\t"}}{{print seeds,genmap,demog,dfe,annot,chr,"pop"id,$0}}' > {output}
         """
 
 
@@ -175,5 +175,5 @@ rule dadi_summary:
     threads: 1,
     shell:
         """
-        cat {input.bestfits} | sed '1iseed\\tgenetic_map\\tdemography\\tDFE\\tannotation\\tchromosome\\tpopulation\\tlikelihood\\tEs\\tshape' > {output.summary} 
+        cat {input.bestfits} | sed '1iseed\\tgenetic_map\\tdemography\\tDFE\\tannotation\\tchromosome\\tpopulation\\tlikelihood\\tshape\\tscale\\ttheta' > {output.summary} 
         """
