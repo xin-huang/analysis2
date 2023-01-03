@@ -27,6 +27,9 @@ dependencies:
   - dadi
   - mamba
   - openjdk
+  - demes
+  - demesdraw
+  - plink
   - pip:
     - git+https://github.com/popsim-consortium/stdpopsim.git
     - scikit-allel

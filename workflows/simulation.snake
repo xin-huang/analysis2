@@ -1,23 +1,31 @@
 """
-Snakefile for running DFE benchmark on stdpopsim.
+Snakefile for running simulation on stdpopsim.
 """
+
 
 import os
 import numpy as np
 import stdpopsim
+import tskit
 
 configfile: "workflows/config/snakemake/config.yaml"
 
 np.random.seed(config["seed"])
 
+
 # ###############################################################################
 # GENERAL RULES & GLOBALS
 # ###############################################################################
 
+
 # The number of replicates of each analysis you would like to run
 replicates = config["replicates"]
+seed_array = np.random.random_integers(1,2**31,replicates)
+
+
 # Where you would like all output files from analysis to live
 output_dir = os.path.abspath(config["output_dir"])
+
 
 # The analysis species
 species = stdpopsim.get_species(config["species"])
@@ -29,38 +37,54 @@ chrm_list = [chrom.id for chrom in species.genome.chromosomes]
 if "chrY" in chrm_list:
     chrm_list.remove("chrY")
 if(config["chrm_list"] != "all"):
-    chrm_list = [chr for chr in config["chrm_list"].split(",")]
+    chrm_list = [chr for chr in config["chrm_list"]]
 
-seed_array = np.random.random_integers(1,2**31,replicates)
+
+# The genetic maps you would like to use
+genmap_list = config['genetic_map']
+
 
 # The specific demographic model you would like to run
 demo_model_array =  config["demo_models"]
 demo_sample_size_dict = {}
+demo_ind_start_index_dict = {}
 for x in demo_model_array:
     demo_sample_size_dict[x["id"]] = x["num_samples_per_population"]
+    demo_ind_start_index_dict[x["id"]] = (np.cumsum(demo_sample_size_dict[x["id"]]) - demo_sample_size_dict[x["id"]][0])/2
 demo_model_ids = [x["id"] for x in demo_model_array] 
-# Select DFE model from catalog  
+
+
+# Select DFE model from catalog
 dfe_list = config["dfe_list"]
+
+
+# Select annotation file for simulation
 annotation_list = config["annotation_list"]
+
 
 # ###############################################################################
 # GENERAL RULES & GLOBALS
 # ###############################################################################
+
+
 rule all:
     input:
-        expand(output_dir + "/simulated_data/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees", 
+        expand(output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.vcf.gz", 
             seeds=seed_array, 
+            genmap=genmap_list,
             demog=demo_model_ids,
             dfes=dfe_list,
             annots=annotation_list,
-            chrms=chrm_list
-            )
+            chrms=chrm_list,
+            ids=[0,1,2]
+        )
+
 
 rule simulation:
     input:
     output:
-        output_dir + "/simulated_data/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees"
-    resources: time=3000, mem_mb=10000
+        ts = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.trees",
+    resources: time=3000, mem_mb=10000,
     run:
         if wildcards.demog == 'Constant': 
             model = stdpopsim.PiecewiseConstantSize(species.population_size)
@@ -72,7 +96,9 @@ rule simulation:
             samples = model.get_samples(*demo_sample_size_dict[wildcards.demog])  # YRI, CEU, CHB
 
         genetic_map_id = config["genetic_map"]
+
         contig = species.get_contig(wildcards.chrms, genetic_map=genetic_map_id)
+
         if wildcards.dfes != "none":
             # Load dfe only if provided
             dfe = species.get_dfe(wildcards.dfes)
@@ -82,7 +108,7 @@ rule simulation:
         elif wildcards.annots == "none":
             contig = species.get_contig(wildcards.chrms, genetic_map=genetic_map_id)
         else:
-          ## Adding annotation only seletion on exon region
+            ## Adding annotation only seletion on exon region
             annot = species.get_annotations(wildcards.annots)
             annot_intervals = annot.get_chromosome_annotations(wildcards.chrms)
             contig.add_dfe(intervals=annot_intervals, DFE=dfe)
@@ -97,4 +123,44 @@ rule simulation:
             slim_burn_in=config["slim_burn_in"],
             seed=wildcards.seeds,
         )
-        ts.dump(output[0])
+        ts.dump(output.ts)
+
+
+rule ts2vcf:
+    input:
+        ts = rules.simulation.output.ts,
+    output:
+        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.vcf",
+    run:
+        ts = tskit.load(input.ts)
+
+        with open(output.vcf, 'w') as o:
+            ts.write_vcf(o, contig_id=wildcards.chrms)
+
+
+rule get_ind_list:
+    input:
+    output:
+        ind = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.ind.list",
+    run:
+        if wildcards.demog == 'Constant':
+            samples = [i for i in range(int(demo_sample_size_dict[wildcards.demog][0]/2))]
+        else:
+            samples = [i+int(demo_ind_start_index_dict[wildcards.demog][int(wildcards.ids)]) for i in range(int(demo_sample_size_dict[wildcards.demog][int(wildcards.ids)]/2))]
+
+        with open(output.ind, 'w') as o:
+            for s in samples:
+                o.write(f'tsk_{s}\n')
+
+
+rule extract_biallelic_variants:
+    input:
+        vcf = rules.ts2vcf.output.vcf,
+        ind = rules.get_ind_list.output.ind,
+    output:
+        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.vcf.gz",
+    shell:
+        """
+        bgzip -c {input.vcf} | bcftools view -m 2 -M 2 -S {input.ind} | bcftools view -i 'INFO/AC>0&INFO/AC<INFO/AN' | awk -F "\\t" 'BEGIN{{OFS="\\t";ORS=""}}{{if($0~/^#/){{print $0"\\n"}}else{{print $1,$2,$3,"A","T\\t";for(i=6;i<NF;i++){{print $i"\\t"}};print $NF"\\n"}}}}' | bgzip -c > {output.vcf}
+        tabix -p vcf {output.vcf}
+        """

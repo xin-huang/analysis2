@@ -1,8 +1,7 @@
-cluster: 
+cluster:
         mkdir -p logs_slurm/{rule} &&
         sbatch
-                --partition=high_priority
-                --account=rgutenk
+                --partition=basic
                 --cpus-per-task={resources.cpus}
                 --mem-per-cpu={resources.mem_mb}
                 --time={resources.time}
@@ -10,8 +9,8 @@ cluster:
                 --output=logs_slurm/{rule}/{rule}-{wildcards}-%j
 
 default-resources:
-        - time=60
-        - mem_mb=5000
+        - time=3000
+        - mem_mb=10000
         - cpus=1
 latency-wait: 180
 restart-times: 3
