@@ -63,7 +63,7 @@ def _generate_fs_from_ts(ts, sample_sets=None):
     return mut_afs
 
 
-def generate_fs(ts, sample_sets, output, format, coding_intervals=None, mask_intervals=None, is_folded=False, **kwargs):
+def generate_fs(ts, sample_sets, output, format, coding_intervals=None, mask_intervals=None, is_folded=False, is_separated=True, **kwargs):
     """
     Description:
         Generates 1d site frequency spectra from tree sequences.
@@ -76,7 +76,8 @@ def generate_fs(ts, sample_sets, output, format, coding_intervals=None, mask_int
         output list: Names of output files.
         format str: Format of output files. 
         is_folded bool: True, generates an unfolded frequency spectrum; False, generates a folded frequency spectrum.
-        kwargs dict: Parameters for different DFE inference tools.
+        is_separated bool: 
+        kwargs dict: Parameters for different tools.
     """
     # If just a single sample set is provided, we need to wrap it
     # in a list to make it a list of sample setS
@@ -85,11 +86,12 @@ def generate_fs(ts, sample_sets, output, format, coding_intervals=None, mask_int
     if coding_intervals is not None:
         ts = ts.keep_intervals(coding_intervals)
     if mask_intervals is not None:
-        ts = ts.remove_intervals(mask_intervals)
+        ts = ts.delete_intervals(mask_intervals)
 
     mut_afs = _generate_fs_from_ts(ts, sample_sets)
     neu_fs = mut_afs["neutral"]
     nonneu_fs = mut_afs["non_neutral"]
+    sample_size = len(neu_fs) - 1
 
     ## polyDFE v2.0 manual Page 1
     if is_folded and (format == 'polyDFE') : raise Exception('polyDFE only uses unfolded frequency spectra!') 
@@ -97,11 +99,12 @@ def generate_fs(ts, sample_sets, output, format, coding_intervals=None, mask_int
         neu_fs = _fold_fs(neu_fs)
         nonneu_fs = _fold_fs(nonneu_fs)
 
-    if format == 'dadi': _generate_dadi_fs(neu_fs, nonneu_fs, output)
+    if format == 'dadi': _generate_dadi_fs(neu_fs, nonneu_fs, output, is_folded, is_separated, sample_size)
     elif format == 'polyDFE': _generate_polydfe_fs(neu_fs, nonneu_fs, output, **kwargs)
     elif format == 'DFE-alpha': _generate_dfe_alpha_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs)
     elif format == 'grapes': _generate_grapes_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs)
-    elif format == 'stairwayplot2': return neu_fs + nonneu_fs
+    elif format == 'stairwayplot2': _generate_stairwayplot2_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs)
+    elif format == 'fastsimcoal2': _generate_fastsimcoal2_fs(neu_fs, nonneu_fs, output, sample_size)
     else: raise Exception(f'{format} is not supported!')
 
 
@@ -124,7 +127,7 @@ def _fold_fs(fs):
     return folded_fs
 
 
-def _generate_dadi_fs(neu_fs, nonneu_fs, output):
+def _generate_dadi_fs(neu_fs, nonneu_fs, output, is_folded, is_separated, sample_size):
     """
     Description:
         Outputs frequency spectra for dadi.
@@ -134,11 +137,87 @@ def _generate_dadi_fs(neu_fs, nonneu_fs, output):
         nonneu_fs numpy.ndarray: Frequency spectrum for non-neutral mutations.
         output list: Names of output files.
     """
-    neu_fs = dadi.Spectrum(neu_fs)
-    nonneu_fs = dadi.Spectrum(nonneu_fs)
+    if is_separated is True:
+        if is_folded is True:
+            padding_len = sample_size+1-len(neu_fs)
+            neu_fs = np.pad(neu_fs, (0, padding_len))
+            nonneu_fs = np.pad(nonneu_fs, (0, padding_len))
+            mask = np.ones(sample_size+1, dtype=int)
+            mask[1:len(neu_fs)-padding_len] = 0
 
-    neu_fs.to_file(output[0])
-    nonneu_fs.to_file(output[1])
+            neu_fs = dadi.Spectrum(neu_fs, data_folded=True, mask=mask)
+            nonneu_fs = dadi.Spectrum(nonneu_fs, data_folded=True, mask=mask)
+        else:
+            neu_fs = dadi.Spectrum(neu_fs)
+            nonneu_fs = dadi.Spectrum(nonneu_fs)
+
+        neu_fs.to_file(output[0])
+        nonneu_fs.to_file(output[1])
+    else:
+        fs = neu_fs + nonneu_fs
+
+        if is_folded is True:
+            padding_len = sample_size+1-len(fs)
+            fs = np.pad(fs, (0, padding_len))
+            mask = np.ones(sample_size+1, dtype=int)
+            mask[1:len(fs)-padding_len] = 0
+
+            fs = dadi.Spectrum(fs, data_folded=True, mask=mask)
+        else:
+            fs = dadi.Spectrum(fs)
+
+        fs.to_file(output[0])
+
+
+def _generate_stairwayplot2_fs(neu_fs, nonneu_fs, output, is_folded, **kwargs):
+    """
+    """
+    fs = neu_fs + nonneu_fs
+
+    if is_folded is True: 
+        whether_folded = 'true'
+        fs = fs[1:]
+        project_dir = f"{kwargs['project_dir']}_folded"
+        plot_title = f"{kwargs['plot_title']}_folded"
+    else: 
+        whether_folded = 'false'
+        fs = fs[1:-1]
+        project_dir = f"{kwargs['project_dir']}_unfolded"
+        plot_title = f"{kwargs['plot_title']}_unfolded"
+
+    fs = " ".join([str(x) for x in fs])
+
+    with open(output, 'w') as o:
+        o.write(f"popid: {kwargs['popid']}\n")
+        o.write(f"nseq: {kwargs['nseq']}\n")
+        o.write(f"L: {kwargs['L']}\n")
+        o.write(f"whether_folded: {whether_folded}\n")
+        o.write(f"SFS: {fs}\n")
+        o.write(f"pct_training: {kwargs['pct_training']}\n")
+        o.write(f"nrand: {kwargs['nrand']}\n")
+        o.write(f"project_dir: {project_dir}\n")
+        o.write(f"stairway_plot_dir: {kwargs['stairway_plot_dir']}\n")
+        o.write(f"ninput: {kwargs['ninput']}\n")
+        o.write(f"mu: {kwargs['mu']}\n")
+        o.write(f"year_per_generation: {kwargs['year_per_generation']}\n")
+        o.write(f"plot_title: {plot_title}\n")
+        o.write(f"xrange: {kwargs['xrange']}\n")
+        o.write(f"yrange: {kwargs['yrange']}\n")
+        o.write(f"xspacing: {kwargs['xspacing']}\n")
+        o.write(f"yspacing: {kwargs['yspacing']}\n")
+        o.write(f"fontsize: {kwargs['fontsize']}\n")
+
+
+def _generate_fastsimcoal2_fs(neu_fs, nonneu_fs, output, sample_size):
+    """
+    """
+    fs = neu_fs + nonneu_fs
+    fs = " ".join([str(x) for x in fs])
+
+    with open(output, 'w') as o:
+        o.write("1 observations. No. of demes and sample sizes are on next line\n")
+        o.write(f"1\t{sample_size}\n")
+        o.write(f"{fs}\n")
 
 
 def _generate_polydfe_fs(neu_fs, nonneu_fs, output, **kwargs):

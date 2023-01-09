@@ -101,7 +101,7 @@ rule clone_smcpp:
 
 rule vcf2smc:
     input:
-        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.vcf.gz",
+        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.masked.vcf.gz",
         ind = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.ind.list",
         smc = rules.clone_smcpp.output, 
     output:

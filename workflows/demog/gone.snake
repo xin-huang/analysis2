@@ -1,5 +1,5 @@
 """
-Snakefile for running gone on stdpopsim.
+Snakefile for running GONE on stdpopsim.
 """
 
 import pathlib
@@ -8,32 +8,29 @@ import os
 import numpy as np
 import stdpopsim
 
+configfile: "workflows/config/snakemake/config.yaml"
+
+np.random.seed(config["seed"])
+
+
 # ###############################################################################
 # KNOBS -
 # ###############################################################################
 
-configfile: "workflows/config/snakemake/config.yaml"
-output_dir = os.path.abspath(config["output_dir"])
-
-# A seed to replicate results
-# TODO mutation rates
-np.random.seed(config["seed"])
 
 # The number of replicates of each analysis you would like to run
 # For now leaving it a 1 just to get results quickly
 replicates = config["replicates"]
+seed_array = np.random.random_integers(1,2**31,replicates)
+
+
+# Where you would like all output files from analysis to live
+output_dir = os.path.abspath(config["output_dir"])
+
 
 # The analysis species
 species = stdpopsim.get_species(config["species"])
 
-# This is the number of samples to simulate for within each population
-# for each replicate
-# TODO double check this is up to date with stdpopsim backend
-population_id = config["population_id"]
-num_sampled_genomes_per_replicate = config["num_sampled_genomes_per_replicate"]
-
-# The DFE id used for selection analyses
-dfe_id = config["dfe_list"][0] # need to generalize to more than one...
 
 # The names of all chromosomes to simulate, separated by commas
 # Use "all" to simulate all chromosomes for the genome
@@ -43,16 +40,13 @@ if "chrY" in chrm_list:
 if(config["chrm_list"] != "all"):
     chrm_list = [chr for chr in config["chrm_list"]]
 
+
 # The genetic maps you would like to use
 # if value None is given default_recombination_rates are
 # used with a flat map
 genetic_map_id = config["genetic_map"]
 genmap_list = config['genetic_map']
 
-# This grabs the default mr from the first chromosome,
-# Ultimitely This needs to be replaced with the weighted average
-# of all chromosomes: This should be done in stdpopsim.
-mutation_rate = species.genome.mean_mutation_rate
 
 # The specific demographic model you would like to run
 demo_model_array =  config["demo_models"]
@@ -61,16 +55,19 @@ demo_sample_size_dict = {}
 for x in demo_model_array:
     demo_sample_size_dict[x["id"]] = x["num_samples_per_population"]
 
+
 # Select DFE model from catalog
 dfe_list = config["dfe_list"]
+
+
+# Select annotation file from stdpopsim
 annotation_list = config["annotation_list"]
+
 
 # ###############################################################################
 # GENERAL RULES & GLOBALS
 # ###############################################################################
 
-seed_array = np.random.random_integers(1,2**31,replicates)
-genetic_map_downloaded_flag= ".genetic_map_downloaded"
 
 rule all:
     input:
@@ -83,6 +80,7 @@ rule all:
             seeds=seed_array,
             ids=[0,1,2],
         )
+
 
 rule clone_gone:
     output:
@@ -97,23 +95,11 @@ rule clone_gone:
         cd ..
         """
 
-rule vcf2plink:
-    input:
-        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.vcf.gz",
-    output:
-        ped = output_dir + "/inference/demog/gone/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.gone.ped",
-        map = output_dir + "/inference/demog/gone/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.gone.map",
-    params:
-        output_prefix = output_dir + "/inference/demog/gone/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.gone",
-    shell:
-        """
-        plink --vcf {input.vcf} --const-fid pop{wildcards.ids} --recode tab 12 --geno 0.0 --out {params.output_prefix} --set-missing-var-ids @:#
-        """
 
 rule run_gone:
     input:
-        ped = rules.vcf2plink.output.ped,
-        map = rules.vcf2plink.output.map,
+        ped = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.masked.ped",
+        map = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.masked.map",
         gone = rules.clone_gone.output,
     output:
         gone = output_dir + "/inference/demog/gone/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/Output_Ne_sim_{chrms}.pop{ids}.gone",
@@ -132,6 +118,7 @@ rule run_gone:
         ln -sf {params.gone_dir}/PROGRAMMES PROGRAMMES
         bash script_GONE.sh {params.input_prefix}
         """
+
 
 rule plot_gone:
     input:

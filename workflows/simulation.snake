@@ -2,7 +2,6 @@
 Snakefile for running simulation on stdpopsim.
 """
 
-
 import os
 import numpy as np
 import stdpopsim
@@ -124,43 +123,3 @@ rule simulation:
             seed=wildcards.seeds,
         )
         ts.dump(output.ts)
-
-
-rule ts2vcf:
-    input:
-        ts = rules.simulation.output.ts,
-    output:
-        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/sim_{chrms}.vcf",
-    run:
-        ts = tskit.load(input.ts)
-
-        with open(output.vcf, 'w') as o:
-            ts.write_vcf(o, contig_id=wildcards.chrms)
-
-
-rule get_ind_list:
-    input:
-    output:
-        ind = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.ind.list",
-    run:
-        if wildcards.demog == 'Constant':
-            samples = [i for i in range(int(demo_sample_size_dict[wildcards.demog][0]/2))]
-        else:
-            samples = [i+int(demo_ind_start_index_dict[wildcards.demog][int(wildcards.ids)]) for i in range(int(demo_sample_size_dict[wildcards.demog][int(wildcards.ids)]/2))]
-
-        with open(output.ind, 'w') as o:
-            for s in samples:
-                o.write(f'tsk_{s}\n')
-
-
-rule extract_biallelic_variants:
-    input:
-        vcf = rules.ts2vcf.output.vcf,
-        ind = rules.get_ind_list.output.ind,
-    output:
-        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.vcf.gz",
-    shell:
-        """
-        bgzip -c {input.vcf} | bcftools view -m 2 -M 2 -S {input.ind} | bcftools view -i 'INFO/AC>0&INFO/AC<INFO/AN' | awk -F "\\t" 'BEGIN{{OFS="\\t";ORS=""}}{{if($0~/^#/){{print $0"\\n"}}else{{print $1,$2,$3,"A","T\\t";for(i=6;i<NF;i++){{print $i"\\t"}};print $NF"\\n"}}}}' | bgzip -c > {output.vcf}
-        tabix -p vcf {output.vcf}
-        """

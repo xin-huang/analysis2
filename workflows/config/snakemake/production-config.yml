@@ -12,7 +12,7 @@
     "num_samples_per_population": [100,100,100],
     }
 ]
-"genetic_map": "HapMapII_GRCh37"
+"genetic_map": ["HapMapII_GRCh37"]
 "chrm_list": ["chr21"]
 "dfe_list": ["Gamma_H17"]
 "annotation_list": ["all_sites"]

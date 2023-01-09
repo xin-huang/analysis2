@@ -113,7 +113,7 @@ rule clone_msmc_tools:
 
 rule vcf2multihetsep:
     input:
-        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.vcf.gz",
+        vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.masked.vcf.gz",
         msmc2 = rules.clone_msmc2.output,
         msmc_tools = rules.clone_msmc_tools.output,
     output:

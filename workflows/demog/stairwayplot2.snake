@@ -154,7 +154,7 @@ rule ts2blueprint:
         
 rule run_stairwayplot2:
     input:
-        blueprint = rules.ts2blueprint.output.blueprint,
+        blueprint = output_dir + "/inference/demog/stairwayplot2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.stairwayplot2.blueprint",
     output:
         summary = output_dir + "/inference/demog/stairwayplot2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/demography/sim_{chrms}.pop{ids}.final.summary",
     params:
