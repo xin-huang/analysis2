@@ -2,11 +2,11 @@
 Snakefile for running smc++ on stdpopsim.
 """
 
-import pathlib
 import sys
 import os
 import numpy as np
 import stdpopsim
+
 
 # ###############################################################################
 # KNOBS -
@@ -70,7 +70,6 @@ annotation_list = config["annotation_list"]
 # ###############################################################################
 
 seed_array = np.random.random_integers(1,2**31,replicates)
-genetic_map_downloaded_flag= ".genetic_map_downloaded"
 
 rule all:
     input:
@@ -83,6 +82,7 @@ rule all:
             seeds=seed_array,
             ids=[0,1,2],
         )
+
 
 rule clone_smcpp:
     output:
@@ -99,6 +99,7 @@ rule clone_smcpp:
         cd ..
         """
 
+
 rule vcf2smc:
     input:
         vcf = output_dir + "/simulated_data/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.biallelic.masked.vcf.gz",
@@ -111,6 +112,7 @@ rule vcf2smc:
         smc++ vcf2smc {input.vcf} {output.smc} {wildcards.chrms} pop{wildcards.ids}:`awk 'BEGIN{{ORS=","}}{{print $0}}' {input.ind} | sed 's/,$//'`
         """
 
+
 rule run_smcpp:
     input:
         smc = rules.vcf2smc.output.smc,
@@ -121,7 +123,7 @@ rule run_smcpp:
         base = "sim_{chrms}.pop{ids}.smc", 
         nonseg_cutoff = 50000,  # See https://github.com/popgenmethods/smcpp/issues/165
         timepoints = "1e2 1e5", # See https://github.com/popgenmethods/smcpp/issues/165
-        mut_rate = lambda wildcards: 1.29e-8 if wildcards.demog == 'Constant' else species.get_demographic_model(wildcards.demog).mutation_rate,
+        mut_rate = lambda wildcards: species.genome.mean_mutation_rate if wildcards.demog == 'Constant' else species.get_demographic_model(wildcards.demog).mutation_rate,
     resources:
         cpus = 8,
     shell:
@@ -129,6 +131,7 @@ rule run_smcpp:
         cd {params.path}
         smc++ estimate --timepoints {params.timepoints} --base {params.base} --nonseg-cutoff {params.nonseg_cutoff} --cores {resources.cpus} {params.mut_rate} {input.smc}
         """
+
 
 rule plot_smcpp:
     input:

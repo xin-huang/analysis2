@@ -146,7 +146,7 @@ rule plot_msmc2:
         yaml = output_dir + "/inference/demog/msmc2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.msmc2.final.demes.yaml", 
         png = output_dir + "/inference/demog/msmc2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.msmc2.final.demes.png",
     params:
-        mut_rate = lambda wildcards: 1.29e-8 if wildcards.demog == 'Constant' else species.get_demographic_model(wildcards.demog).mutation_rate,
+        mut_rate = lambda wildcards: species.genome.mean_mutation_rate if wildcards.demog == 'Constant' else species.get_demographic_model(wildcards.demog).mutation_rate,
     shell:
         """
         python ext/msmc-tools/convert_msmc_to_demes.py {input.res} {params.mut_rate} > {output.yaml}
