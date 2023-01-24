@@ -80,7 +80,7 @@ rule all:
             ids=[0,1,2],
             extensions=['vcf.gz', 'ped', 'map'],
         ),
-        expand(output_dir + "/inference/demog/{tools}/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.{tools}.{types}.fs",
+        expand(output_dir + "/inference/demog/dadi/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.dadi.{types}.fs",
             seeds=seed_array,
             genmap=genmap_list,
             demog=demo_model_ids,
@@ -88,10 +88,9 @@ rule all:
             annots=annotation_list,
             chrms=chrm_list,
             ids=[0,1,2],
-            tools=['dadi',], # 'stairwayplot2'],
             types=['folded', 'unfolded'],
         ),
-        expand(output_dir + "/inference/demog/fastsimcoal2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.fastsimcoal2_DSFS.obs",
+        expand(output_dir + "/inference/demog/fastsimcoal2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.fastsimcoal2{extensions}",
             seeds=seed_array,
             genmap=genmap_list,
             demog=demo_model_ids,
@@ -99,6 +98,17 @@ rule all:
             annots=annotation_list,
             chrms=chrm_list,
             ids=[0,1,2],
+            extensions=['_DAFpop0.obs', '.tpl', '.est'],
+        ),
+        expand(output_dir + "/inference/demog/stairwayplot2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.stairwayplot2.{types}.blueprint",
+            seeds=seed_array,
+            genmap=genmap_list,
+            demog=demo_model_ids,
+            dfes=dfe_list,
+            annots=annotation_list,
+            chrms=chrm_list,
+            ids=[0,1,2],
+            types=['folded', 'unfolded'],
         ),
         expand(output_dir + "/inference/dfe/dadi/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.dadi.{types}.fs",
             seeds=seed_array,
@@ -191,7 +201,9 @@ rule ts2fs_demog: # AFS for demographic inference
     output:
         dadi_folded_fs = output_dir + "/inference/demog/dadi/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.dadi.folded.fs",
         dadi_unfolded_fs = output_dir + "/inference/demog/dadi/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.dadi.unfolded.fs",
-        fastsimcoal2_dsfs = output_dir + "/inference/demog/fastsimcoal2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.fastsimcoal2_DSFS.obs",
+        fastsimcoal2_dsfs = output_dir + "/inference/demog/fastsimcoal2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.fastsimcoal2_DAFpop0.obs",
+        fastsimcoal2_tpl = output_dir + "/inference/demog/fastsimcoal2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.fastsimcoal2.tpl",
+        fastsimcoal2_est = output_dir + "/inference/demog/fastsimcoal2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.fastsimcoal2.est",
         stairwayplot2_folded_fs = output_dir + "/inference/demog/stairwayplot2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.stairwayplot2.folded.blueprint",
         stairwayplot2_unfolded_fs = output_dir + "/inference/demog/stairwayplot2/{genmap}/{demog}/{dfes}/{annots}/{seeds}/pop{ids}/sim_{chrms}.pop{ids}.stairwayplot2.unfolded.blueprint",
     params:
@@ -223,6 +235,38 @@ rule ts2fs_demog: # AFS for demographic inference
 
         # fastsimcoal2
         ts2fs.generate_fs(ts, samps, output.fastsimcoal2_dsfs, format='fastsimcoal2')
+        with open(output.fastsimcoal2_tpl, 'w') as o:
+            o.write("//Number of population samples (demes)\n")
+            o.write("1\n")
+            o.write("//Population effective sizes (number of genes)\n")
+            o.write("NPOP\n")
+            o.write("//Sample sizes\n")
+            o.write(f"{params.nseq}\n")
+            o.write("//Growth rates : negative growth implies population expansion\n")
+            o.write("0\n")
+            o.write("//Number of migration matrices : 0 implies no migration between demes\n")
+            o.write("0\n")
+            o.write("//historical event: time, source, sink, migrants, new size, new growth rate, migr. matrix\n")
+            o.write("1 historical event\n")
+            o.write("TEXP 0 0 0 RESIZE 0 0\n")
+            o.write("//Number of independent loci [chromosome]\n")
+            o.write("1 0\n")
+            o.write("//Per chromosome: Number of linkage blocks\n")
+            o.write("1\n")
+            o.write("//per Block: data type, num loci, rec. rate and mut rate + optional parameters\n")
+            o.write(f"FREQ 1 0 {params.mu}\n")
+    
+        with open(output.fastsimcoal2_est, 'w') as o:
+            o.write("// Priors and rules file\n")
+            o.write("// *********************\n")
+            o.write("[PARAMETERS]\n")
+            o.write("//#isInt? #name #dist. #min #max\n")
+            o.write("//all N are in number of haploid individuals\n")
+            o.write("1 NPOP logunif 100 100000 output bounded\n")
+            o.write("1 TEXP logunif 100 5000 output\n")
+            o.write("0 RESIZE logunif 1e-3 1000 output\n")
+            o.write("[COMPLEX PARAMETERS]\n")
+            o.write("1 ANCSIZE = NPOP*RESIZE output\n")
 
         # stairwayplot2
         ts2fs.generate_fs(ts, samps, output.stairwayplot2_folded_fs, format='stairwayplot2', is_folded=True,
